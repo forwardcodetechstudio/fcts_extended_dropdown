@@ -1,0 +1,7 @@
+
+# FVM Version Cache
+.fvm/
+pubspec.lock
+.dart_tool/
+build/
+.fvmrc
