@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:rxdart/rxdart.dart';
 import '../models/dropdown_item.dart';
 
@@ -29,18 +30,25 @@ class DropdownController<T> {
 
   StreamSubscription? _searchSubscription;
 
+  final ValueChanged<List<DropdownItem<T>>>? onChanged;
+
   DropdownController({
     this.isMultipleSelection = false,
     this.debounceDuration = const Duration(milliseconds: 300),
     this.onRemoteSearch,
     this.initialItems = const [],
     List<DropdownItem<T>> initialSelectedItems = const [],
+    this.onChanged,
   }) {
     _itemsController.add(initialItems);
     _selectedItemsController.add(initialSelectedItems);
 
     _searchSubscription =
         _searchQuery.debounceTime(debounceDuration).listen(_handleSearch);
+
+    _selectedItemsController.stream.listen((items) {
+      onChanged?.call(items);
+    });
   }
 
   void setSearchQuery(String query) {

@@ -215,6 +215,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       }
                       return null;
                     },
+                    onChanged: (List<DropdownItem<String>> value) {},
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(

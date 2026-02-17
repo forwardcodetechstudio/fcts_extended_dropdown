@@ -280,6 +280,7 @@ class FctsExtendedDropdownFormField<T>
   final Duration debounceDuration;
   final bool? showClearButton;
   final InputDecoration? decoration;
+  final ValueChanged<List<DropdownItem<T>>>? onChanged;
 
   FctsExtendedDropdownFormField({
     super.key,
@@ -299,6 +300,7 @@ class FctsExtendedDropdownFormField<T>
     this.debounceDuration = const Duration(milliseconds: 300),
     this.showClearButton = true,
     this.decoration,
+    this.onChanged,
     super.onSaved,
     super.validator,
     super.initialValue,
@@ -325,6 +327,7 @@ class FctsExtendedDropdownFormField<T>
               debounceDuration: debounceDuration,
               showClearButton: showClearButton,
               decoration: decoration,
+              onChanged: onChanged,
               controller: field._controller,
               errorText: state.errorText,
             );
