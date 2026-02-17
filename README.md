@@ -4,10 +4,11 @@ A highly customizable Flutter dropdown package with support for static/remote da
 
 ## Features
 
-- [x] Select from list of static data.
-- [x] Select from remote data source.
-- [x] Search from both static and remote data sources with built-in debounce.
-- [x] Single or multiple selection modes.
+- [x] Static and Remote data sources.
+- [x] Search with built-in debounce.
+- [x] Single and Multiple selection modes.
+- [x] **TextField Style**: Supports standard `InputDecoration` (Floating labels, outline borders).
+- [x] **Form Ready**: Includes `FctsExtendedDropdownFormField` for standard Flutter `Form` validation.
 - [x] Fully customizable appearance via builders.
 
 ## Getting Started
@@ -16,13 +17,20 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  fcts_extended_dropdown: ^1.0.0
+  fcts_extended_dropdown: ^1.1.0
 ```
+
+## Widgets
+
+### 1. FctsExtendedDropdown
+Direct widget for quick selection and reactive UI. Best used when you handle state manually.
+
+### 2. FctsExtendedDropdownFormField
+Wraps the dropdown in a `FormField`. Perfect for use inside a `Form` widget with validation rules.
 
 ## Usage
 
 ### Simple Static Dropdown
-
 ```dart
 FctsExtendedDropdown<int>(
   label: 'Select Number',
@@ -36,33 +44,62 @@ FctsExtendedDropdown<int>(
 )
 ```
 
-### Remote Search with Debounce
+### TextField-Style (Outline & Floating Labels)
+Use the `decoration` property to apply Material `InputDecoration`.
 
 ```dart
-FctsExtendedDropdown<String>(
-  label: 'Search Cities',
-  onRemoteSearch: (query) async {
-    final results = await api.searchCities(query);
-    return results.map((e) => DropdownItem(label: e.name, value: e.id)).toList();
-  },
-  onChanged: (selected) {
-    print(selected.first.label);
-  },
+FctsExtendedDropdown<int>(
+  label: 'Choose Number',
+  items: staticItems,
+  decoration: InputDecoration(
+    labelText: 'Select Number',
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+    prefixIcon: Icon(Icons.numbers),
+  ),
+  onChanged: (selected) => print(selected),
 )
 ```
 
-### Multiple Selection
+### Form Integration (Validation)
+Use `FctsExtendedDropdownFormField` for seamless form validation.
 
+#### Remote Search + Required Validation
 ```dart
-FctsExtendedDropdown<String>(
-  label: 'Select Tags',
+Form(
+  key: _formKey,
+  child: FctsExtendedDropdownFormField<String>(
+    label: 'City Search',
+    onRemoteSearch: (query) async {
+       return await api.search(query);
+    },
+    decoration: InputDecoration(
+      labelText: 'Required City Selection',
+      border: OutlineInputBorder(),
+    ),
+    validator: (value) {
+      if (value == null || value.isEmpty) {
+        return 'Please search and select a city';
+      }
+      return null;
+    },
+  ),
+)
+```
+
+#### Multi-Select + Custom Validation
+```dart
+FctsExtendedDropdownFormField<String>(
+  label: 'Skills',
   isMultipleSelection: true,
   items: [
-    DropdownItem(label: 'Flutter', value: 'flutter'),
     DropdownItem(label: 'Dart', value: 'dart'),
+    DropdownItem(label: 'Flutter', value: 'flutter'),
   ],
-  onChanged: (selected) {
-    print(selected.map((e) => e.value).toList());
+  validator: (value) {
+    if (value == null || value.length < 2) {
+      return 'Select at least 2 skills';
+    }
+    return null;
   },
 )
 ```

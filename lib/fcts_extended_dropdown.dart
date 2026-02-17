@@ -20,10 +20,15 @@ class FctsExtendedDropdown<T> extends StatefulWidget {
   final Widget Function(BuildContext)? loadingBuilder;
   final String modalTitle;
   final String searchHint;
-  final Decoration? decoration;
+  final BoxDecoration? fieldDecoration;
   final EdgeInsetsGeometry? padding;
   final Duration debounceDuration;
   final bool? showClearButton;
+  final InputDecoration? decoration;
+  final DropdownController<T>? controller;
+  final String? errorText;
+  final String? Function(List<DropdownItem<T>>)? validator;
+  final AutovalidateMode autovalidateMode;
 
   const FctsExtendedDropdown({
     super.key,
@@ -39,40 +44,92 @@ class FctsExtendedDropdown<T> extends StatefulWidget {
     this.emptyBuilder,
     this.loadingBuilder,
     this.modalTitle = 'Select Item',
-    this.searchHint = 'Search...',
-    this.decoration,
+    this.searchHint = '',
+    this.fieldDecoration,
     this.padding,
     this.debounceDuration = const Duration(milliseconds: 300),
     this.showClearButton = true,
+    this.decoration,
+    this.controller,
+    this.errorText,
+    this.validator,
+    this.autovalidateMode = AutovalidateMode.disabled,
   });
 
   @override
   State<FctsExtendedDropdown<T>> createState() =>
-      _FctsExtendedDropdownState<T>();
+      FctsExtendedDropdownState<T>();
 }
 
-class _FctsExtendedDropdownState<T> extends State<FctsExtendedDropdown<T>> {
+class FctsExtendedDropdownState<T> extends State<FctsExtendedDropdown<T>> {
   late DropdownController<T> _controller;
+  bool _isLocalController = false;
+  String? _internalErrorText;
 
   @override
   void initState() {
     super.initState();
-    _controller = DropdownController<T>(
-      isMultipleSelection: widget.isMultipleSelection,
-      onRemoteSearch: widget.onRemoteSearch,
-      initialItems: widget.items,
-      initialSelectedItems: widget.initialSelectedItems ?? [],
-      debounceDuration: widget.debounceDuration,
-    );
+    if (widget.controller != null) {
+      _controller = widget.controller!;
+    } else {
+      _isLocalController = true;
+      _controller = DropdownController<T>(
+        isMultipleSelection: widget.isMultipleSelection,
+        onRemoteSearch: widget.onRemoteSearch,
+        initialItems: widget.items,
+        initialSelectedItems: widget.initialSelectedItems ?? [],
+        debounceDuration: widget.debounceDuration,
+      );
+    }
 
     _controller.selectedItemsStream.listen((items) {
+      if (widget.validator != null &&
+          widget.autovalidateMode != AutovalidateMode.disabled) {
+        validate();
+      }
       widget.onChanged?.call(items);
     });
   }
 
+  String? validate() {
+    if (widget.validator != null) {
+      final error = widget.validator!(_controller.selectedItems);
+      setState(() {
+        _internalErrorText = error;
+      });
+      return error;
+    }
+    return null;
+  }
+
+  @override
+  void didUpdateWidget(covariant FctsExtendedDropdown<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.controller != oldWidget.controller) {
+      if (_isLocalController) {
+        _controller.dispose();
+      }
+      if (widget.controller != null) {
+        _controller = widget.controller!;
+        _isLocalController = false;
+      } else {
+        _isLocalController = true;
+        _controller = DropdownController<T>(
+          isMultipleSelection: widget.isMultipleSelection,
+          onRemoteSearch: widget.onRemoteSearch,
+          initialItems: widget.items,
+          initialSelectedItems: widget.initialSelectedItems ?? [],
+          debounceDuration: widget.debounceDuration,
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
-    _controller.dispose();
+    if (_isLocalController) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 
@@ -106,14 +163,19 @@ class _FctsExtendedDropdownState<T> extends State<FctsExtendedDropdown<T>> {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveErrorText = widget.errorText ?? _internalErrorText;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
+        if (widget.decoration == null ||
+            widget.decoration?.labelText == null) ...[
+          Text(
+            widget.label,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+        ],
         InkWell(
           onTap: _showDropdownModal,
           child: StreamBuilder<List<DropdownItem<T>>>(
@@ -125,49 +187,186 @@ class _FctsExtendedDropdownState<T> extends State<FctsExtendedDropdown<T>> {
                 return widget.fieldBuilder!(context, selectedItems);
               }
 
-              return Container(
-                padding: widget.padding ??
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: widget.decoration ??
-                    BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade400),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: selectedItems.isEmpty
-                          ? Text(
-                              widget.placeholder ?? 'Select...',
-                              style: TextStyle(color: Colors.grey.shade600),
-                            )
-                          : Text(
-                              selectedItems.map((e) => e.label).join(', '),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                    ),
-                    if (selectedItems.isNotEmpty &&
-                        (widget.showClearButton ?? true))
-                      GestureDetector(
-                        onTap: () {
-                          _controller.clearSelection();
-                        },
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8.0),
-                          child:
-                              Icon(Icons.clear, size: 20, color: Colors.grey),
-                        ),
+              final child = Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: selectedItems.isEmpty
+                        ? Text(
+                            widget.placeholder ?? '',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          )
+                        : Text(
+                            selectedItems.map((e) => e.label).join(', '),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                  ),
+                  if (selectedItems.isNotEmpty &&
+                      (widget.showClearButton ?? true))
+                    GestureDetector(
+                      onTap: () {
+                        _controller.clearSelection();
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Icon(Icons.clear, size: 20, color: Colors.grey),
                       ),
-                    const Icon(Icons.arrow_drop_down),
-                  ],
-                ),
+                    ),
+                  const Icon(Icons.arrow_drop_down),
+                ],
+              );
+
+              if (widget.decoration != null) {
+                return InputDecorator(
+                  decoration: widget.decoration!.copyWith(
+                    errorText: effectiveErrorText,
+                  ),
+                  isEmpty: selectedItems.isEmpty,
+                  child: child,
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: widget.padding ??
+                        const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                    decoration: widget.fieldDecoration ??
+                        BoxDecoration(
+                          border: Border.all(
+                              color: effectiveErrorText != null
+                                  ? Colors.red
+                                  : Colors.grey.shade400),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                    child: child,
+                  ),
+                  if (effectiveErrorText != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, left: 12),
+                      child: Text(
+                        effectiveErrorText,
+                        style: const TextStyle(color: Colors.red, fontSize: 12),
+                      ),
+                    ),
+                ],
               );
             },
           ),
         ),
       ],
     );
+  }
+}
+
+class FctsExtendedDropdownFormField<T>
+    extends FormField<List<DropdownItem<T>>> {
+  final String label;
+  final String? placeholder;
+  final List<DropdownItem<T>> items;
+  final List<DropdownItem<T>>? initialSelectedItems;
+  final bool isMultipleSelection;
+  final RemoteSearchCallback<T>? onRemoteSearch;
+  final Widget Function(BuildContext, DropdownItem<T>, bool)? itemBuilder;
+  final Widget Function(BuildContext)? emptyBuilder;
+  final Widget Function(BuildContext)? loadingBuilder;
+  final String modalTitle;
+  final String searchHint;
+  final BoxDecoration? fieldDecoration;
+  final EdgeInsetsGeometry? padding;
+  final Duration debounceDuration;
+  final bool? showClearButton;
+  final InputDecoration? decoration;
+
+  FctsExtendedDropdownFormField({
+    super.key,
+    required this.label,
+    this.placeholder,
+    this.items = const [],
+    this.initialSelectedItems,
+    this.isMultipleSelection = false,
+    this.onRemoteSearch,
+    this.itemBuilder,
+    this.emptyBuilder,
+    this.loadingBuilder,
+    this.modalTitle = 'Select Item',
+    this.searchHint = '',
+    this.fieldDecoration,
+    this.padding,
+    this.debounceDuration = const Duration(milliseconds: 300),
+    this.showClearButton = true,
+    this.decoration,
+    super.onSaved,
+    super.validator,
+    super.initialValue,
+    super.enabled = true,
+    super.autovalidateMode,
+  }) : super(
+          builder: (FormFieldState<List<DropdownItem<T>>> state) {
+            final _FctsExtendedDropdownFormFieldState<T> field =
+                state as _FctsExtendedDropdownFormFieldState<T>;
+            return FctsExtendedDropdown<T>(
+              label: label,
+              placeholder: placeholder,
+              items: items,
+              initialSelectedItems: initialValue ?? initialSelectedItems,
+              isMultipleSelection: isMultipleSelection,
+              onRemoteSearch: onRemoteSearch,
+              itemBuilder: itemBuilder,
+              emptyBuilder: emptyBuilder,
+              loadingBuilder: loadingBuilder,
+              modalTitle: modalTitle,
+              searchHint: searchHint,
+              fieldDecoration: fieldDecoration,
+              padding: padding,
+              debounceDuration: debounceDuration,
+              showClearButton: showClearButton,
+              decoration: decoration,
+              controller: field._controller,
+              errorText: state.errorText,
+            );
+          },
+        );
+
+  @override
+  FormFieldState<List<DropdownItem<T>>> createState() =>
+      _FctsExtendedDropdownFormFieldState<T>();
+}
+
+class _FctsExtendedDropdownFormFieldState<T>
+    extends FormFieldState<List<DropdownItem<T>>> {
+  late DropdownController<T> _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    final FctsExtendedDropdownFormField<T> widget =
+        this.widget as FctsExtendedDropdownFormField<T>;
+    _controller = DropdownController<T>(
+      isMultipleSelection: widget.isMultipleSelection,
+      onRemoteSearch: widget.onRemoteSearch,
+      initialItems: widget.items,
+      initialSelectedItems: value ?? widget.initialSelectedItems ?? [],
+      debounceDuration: widget.debounceDuration,
+    );
+
+    _controller.selectedItemsStream.listen((items) {
+      didChange(items);
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  void reset() {
+    super.reset();
+    _controller.clearSelection();
   }
 }

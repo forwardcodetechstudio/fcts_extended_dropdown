@@ -1,6 +1,6 @@
 name: fcts_extended_dropdown
 description: A highly customizable Flutter dropdown package supporting static and remote data, search with debounce, and single/multi selection. Developed by Rahul Gupta and Forwardcode TechStudio.
-version: 1.0.0
+version: 1.0.1
 homepage: https://github.com/Forwardcode-TechStudio/fcts_extended_dropdown
 repository: https://github.com/Forwardcode-TechStudio/fcts_extended_dropdown
 issue_tracker: https://github.com/Forwardcode-TechStudio/fcts_extended_dropdown/issues

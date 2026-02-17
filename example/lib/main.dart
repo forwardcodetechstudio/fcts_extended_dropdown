@@ -29,6 +29,9 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final GlobalKey<FctsExtendedDropdownState<String>> _standaloneKey =
+      GlobalKey<FctsExtendedDropdownState<String>>();
   List<DropdownItem<int>> _selectedStatic = [];
   List<DropdownItem<String>> _selectedRemote = [];
   List<DropdownItem<String>> _selectedMulti = [];
@@ -97,6 +100,135 @@ class _MyHomePageState extends State<MyHomePage> {
               onChanged: (selected) {
                 setState(() => _selectedMulti = selected);
               },
+            ),
+            const SizedBox(height: 24),
+            FctsExtendedDropdown<int>(
+              label: 'TextField Style (Outline)',
+              items: _staticItems,
+              decoration: const InputDecoration(
+                labelText: 'Select Number (Floating)',
+                hintText: 'Choose from list',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
+                prefixIcon: Icon(Icons.numbers),
+              ),
+              onChanged: (selected) {
+                // Handle selection
+              },
+            ),
+            const SizedBox(height: 24),
+            FctsExtendedDropdown<String>(
+              label: 'TextField Style (Filled)',
+              onRemoteSearch: _handleRemoteSearch,
+              decoration: InputDecoration(
+                labelText: 'City Search',
+                filled: true,
+                fillColor: Colors.deepPurple.withValues(alpha: 0.05),
+                border: const UnderlineInputBorder(),
+              ),
+              onChanged: (selected) {
+                // Handle selection
+              },
+            ),
+            const SizedBox(height: 24),
+            const SizedBox(height: 48),
+            const Text(
+              'Form Integration (Required)',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  FctsExtendedDropdown<String>(
+                    key: _standaloneKey,
+                    label: 'Standalone Validator Dropdown',
+                    placeholder: 'Must select something',
+                    items: const [
+                      DropdownItem(label: 'Option A', value: 'a'),
+                      DropdownItem(label: 'Option B', value: 'b'),
+                    ],
+                    validator: (items) {
+                      if (items.isEmpty) {
+                        return 'Please select an option (Standalone)';
+                      }
+                      return null;
+                    },
+                    onChanged: (selected) {
+                      // selection change
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  FctsExtendedDropdownFormField<int>(
+                    label: 'Required Selection',
+                    items: _staticItems,
+                    decoration: const InputDecoration(
+                      labelText: 'Must select a number',
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(16))),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please select at least one number';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  FctsExtendedDropdownFormField<String>(
+                    label: 'Remote Form Field',
+                    onRemoteSearch: _handleRemoteSearch,
+                    decoration: const InputDecoration(
+                      labelText: 'Search City (Required)',
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(16))),
+                      prefixIcon: Icon(Icons.location_city),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please search and select a city';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  FctsExtendedDropdownFormField<String>(
+                    label: 'Multi-Select Form Field',
+                    isMultipleSelection: true,
+                    items: const [
+                      DropdownItem(label: 'Dart', value: 'dart'),
+                      DropdownItem(label: 'Flutter', value: 'flutter'),
+                      DropdownItem(label: 'Swift', value: 'swift'),
+                      DropdownItem(label: 'Kotlin', value: 'kotlin'),
+                    ],
+                    decoration: const InputDecoration(
+                      labelText: 'Selected Skills',
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(16))),
+                      prefixIcon: Icon(Icons.code),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.length < 2) {
+                        return 'Please select at least 2 skills';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Form is valid!')),
+                        );
+                      }
+                    },
+                    child: const Text('Submit Form'),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 48),
             Card(
