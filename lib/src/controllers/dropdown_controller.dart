@@ -114,6 +114,14 @@ class DropdownController<T> {
     }
   }
 
+  void setSelection(List<DropdownItem<T>> items) {
+    if (!isMultipleSelection && items.length > 1) {
+      _selectedItemsController.add([items.first]);
+    } else {
+      _selectedItemsController.add(items);
+    }
+  }
+
   void unselectItem(DropdownItem<T> item) {
     final current = List<DropdownItem<T>>.from(selectedItems);
     current.remove(item);

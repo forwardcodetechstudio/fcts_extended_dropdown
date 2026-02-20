@@ -281,6 +281,7 @@ class FctsExtendedDropdownFormField<T>
   final bool? showClearButton;
   final InputDecoration? decoration;
   final ValueChanged<List<DropdownItem<T>>>? onChanged;
+  final DropdownController<T>? controller;
 
   FctsExtendedDropdownFormField({
     super.key,
@@ -301,6 +302,7 @@ class FctsExtendedDropdownFormField<T>
     this.showClearButton = true,
     this.decoration,
     this.onChanged,
+    this.controller,
     super.onSaved,
     super.validator,
     super.initialValue,
@@ -342,19 +344,26 @@ class FctsExtendedDropdownFormField<T>
 class _FctsExtendedDropdownFormFieldState<T>
     extends FormFieldState<List<DropdownItem<T>>> {
   late DropdownController<T> _controller;
+  bool _isLocalController = false;
 
   @override
   void initState() {
     super.initState();
     final FctsExtendedDropdownFormField<T> widget =
         this.widget as FctsExtendedDropdownFormField<T>;
-    _controller = DropdownController<T>(
-      isMultipleSelection: widget.isMultipleSelection,
-      onRemoteSearch: widget.onRemoteSearch,
-      initialItems: widget.items,
-      initialSelectedItems: value ?? widget.initialSelectedItems ?? [],
-      debounceDuration: widget.debounceDuration,
-    );
+
+    if (widget.controller != null) {
+      _controller = widget.controller!;
+    } else {
+      _isLocalController = true;
+      _controller = DropdownController<T>(
+        isMultipleSelection: widget.isMultipleSelection,
+        onRemoteSearch: widget.onRemoteSearch,
+        initialItems: widget.items,
+        initialSelectedItems: value ?? widget.initialSelectedItems ?? [],
+        debounceDuration: widget.debounceDuration,
+      );
+    }
 
     _controller.selectedItemsStream.listen((items) {
       didChange(items);
@@ -362,14 +371,45 @@ class _FctsExtendedDropdownFormFieldState<T>
   }
 
   @override
+  void didUpdateWidget(covariant FctsExtendedDropdownFormField<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final FctsExtendedDropdownFormField<T> widget =
+        this.widget as FctsExtendedDropdownFormField<T>;
+
+    if (widget.controller != oldWidget.controller) {
+      if (_isLocalController) {
+        _controller.dispose();
+      }
+      if (widget.controller != null) {
+        _controller = widget.controller!;
+        _isLocalController = false;
+      } else {
+        _isLocalController = true;
+        _controller = DropdownController<T>(
+          isMultipleSelection: widget.isMultipleSelection,
+          onRemoteSearch: widget.onRemoteSearch,
+          initialItems: widget.items,
+          initialSelectedItems: value ?? widget.initialSelectedItems ?? [],
+          debounceDuration: widget.debounceDuration,
+        );
+      }
+    }
+  }
+
+  @override
   void dispose() {
-    _controller.dispose();
+    if (_isLocalController) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 
   @override
   void reset() {
     super.reset();
-    _controller.clearSelection();
+    final FctsExtendedDropdownFormField<T> widget =
+        this.widget as FctsExtendedDropdownFormField<T>;
+    _controller
+        .setSelection(widget.initialValue ?? widget.initialSelectedItems ?? []);
   }
 }

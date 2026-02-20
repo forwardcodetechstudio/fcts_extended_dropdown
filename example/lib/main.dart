@@ -42,6 +42,17 @@ class _MyHomePageState extends State<MyHomePage> {
         label: 'Item $index', value: index, subLabel: 'Subtitle for $index'),
   );
 
+  late final DropdownController<int> _staticController =
+      DropdownController<int>(
+    initialItems: _staticItems,
+  );
+
+  @override
+  void dispose() {
+    _staticController.dispose();
+    super.dispose();
+  }
+
   Future<List<DropdownItem<String>>> _handleRemoteSearch(String query) async {
     // Simulate API call
     await Future.delayed(const Duration(milliseconds: 500));
@@ -70,13 +81,31 @@ class _MyHomePageState extends State<MyHomePage> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            FctsExtendedDropdown<int>(
-              label: 'Static Data Dropdown',
-              placeholder: 'Select a number',
-              items: _staticItems,
-              onChanged: (selected) {
-                setState(() => _selectedStatic = selected);
-              },
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: FctsExtendedDropdown<int>(
+                    controller: _staticController,
+                    label: 'Static Data Dropdown',
+                    placeholder: 'Select a number',
+                    items: _staticItems,
+                    onChanged: (selected) {
+                      setState(() => _selectedStatic = selected);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2.0),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _staticController.setSelection([_staticItems[5]]);
+                    },
+                    child: const Text('Set to 5'),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 24),
             FctsExtendedDropdown<String>(
