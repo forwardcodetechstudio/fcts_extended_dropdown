@@ -7,10 +7,10 @@ typedef RemoteSearchCallback<T> = FutureOr<List<DropdownItem<T>>> Function(
     String query);
 
 class DropdownController<T> {
-  final bool isMultipleSelection;
-  final Duration debounceDuration;
-  final RemoteSearchCallback<T>? onRemoteSearch;
-  final List<DropdownItem<T>> initialItems;
+  bool isMultipleSelection;
+  Duration debounceDuration;
+  RemoteSearchCallback<T>? onRemoteSearch;
+  List<DropdownItem<T>> items;
 
   final _selectedItemsController =
       BehaviorSubject<List<DropdownItem<T>>>.seeded([]);
@@ -36,11 +36,11 @@ class DropdownController<T> {
     this.isMultipleSelection = false,
     this.debounceDuration = const Duration(milliseconds: 300),
     this.onRemoteSearch,
-    this.initialItems = const [],
+    List<DropdownItem<T>> initialItems = const [],
     List<DropdownItem<T>> initialSelectedItems = const [],
     this.onChanged,
-  }) {
-    _itemsController.add(initialItems);
+  }) : items = initialItems {
+    _itemsController.add(items);
     _selectedItemsController.add(initialSelectedItems);
 
     _searchSubscription =
@@ -57,6 +57,29 @@ class DropdownController<T> {
 
   void clearSearch() {
     _searchQuery.add('');
+  }
+
+  void syncWithWidget({
+    required bool isMultipleSelection,
+    required Duration debounceDuration,
+    RemoteSearchCallback<T>? onRemoteSearch,
+    required List<DropdownItem<T>> items,
+  }) {
+    this.isMultipleSelection = isMultipleSelection;
+    if (debounceDuration != this.debounceDuration) {
+      this.debounceDuration = debounceDuration;
+      _searchSubscription?.cancel();
+      _searchSubscription = _searchQuery
+          .debounceTime(this.debounceDuration)
+          .listen(_handleSearch);
+    }
+
+    this.onRemoteSearch = onRemoteSearch;
+    this.items = items;
+
+    if (this.onRemoteSearch == null && _searchQuery.value.isEmpty) {
+      _itemsController.add(this.items);
+    }
   }
 
   void refresh() {
@@ -88,9 +111,9 @@ class DropdownController<T> {
       }
     } else {
       if (query.isEmpty) {
-        _itemsController.add(initialItems);
+        _itemsController.add(items);
       } else {
-        final filtered = initialItems.where((item) {
+        final filtered = items.where((item) {
           return item.label.toLowerCase().contains(query.toLowerCase()) ||
               (item.subLabel?.toLowerCase().contains(query.toLowerCase()) ??
                   false);

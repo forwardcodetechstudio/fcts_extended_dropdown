@@ -47,6 +47,9 @@ class _MyHomePageState extends State<MyHomePage> {
     initialItems: _staticItems,
   );
 
+  late final DropdownController<String> remoteCityController =
+      DropdownController<String>();
+
   @override
   void dispose() {
     _staticController.dispose();
@@ -207,6 +210,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   const SizedBox(height: 24),
                   FctsExtendedDropdownFormField<String>(
+                    controller: remoteCityController,
                     label: 'Remote Form Field',
                     onRemoteSearch: _handleRemoteSearch,
                     decoration: const InputDecoration(

@@ -82,6 +82,13 @@ class FctsExtendedDropdownState<T> extends State<FctsExtendedDropdown<T>> {
       );
     }
 
+    _controller.syncWithWidget(
+      isMultipleSelection: widget.isMultipleSelection,
+      debounceDuration: widget.debounceDuration,
+      onRemoteSearch: widget.onRemoteSearch,
+      items: widget.items,
+    );
+
     _controller.selectedItemsStream.listen((items) {
       if (widget.validator != null &&
           widget.autovalidateMode != AutovalidateMode.disabled) {
@@ -123,6 +130,13 @@ class FctsExtendedDropdownState<T> extends State<FctsExtendedDropdown<T>> {
         );
       }
     }
+
+    _controller.syncWithWidget(
+      isMultipleSelection: widget.isMultipleSelection,
+      debounceDuration: widget.debounceDuration,
+      onRemoteSearch: widget.onRemoteSearch,
+      items: widget.items,
+    );
   }
 
   @override
