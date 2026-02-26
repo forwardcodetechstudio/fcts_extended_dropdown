@@ -113,10 +113,10 @@ class DropdownController<T> {
       if (query.isEmpty) {
         _itemsController.add(items);
       } else {
+        final searchLower = query.toLowerCase();
         final filtered = items.where((item) {
-          return item.label.toLowerCase().contains(query.toLowerCase()) ||
-              (item.subLabel?.toLowerCase().contains(query.toLowerCase()) ??
-                  false);
+          return item.label.toLowerCase().contains(searchLower) ||
+              (item.subLabel?.toLowerCase().contains(searchLower) ?? false);
         }).toList();
         _itemsController.add(filtered);
       }
