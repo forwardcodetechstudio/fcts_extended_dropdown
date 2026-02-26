@@ -155,21 +155,25 @@ class FctsExtendedDropdownState<T> extends State<FctsExtendedDropdown<T>> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          minChildSize: 0.5,
-          maxChildSize: 0.9,
-          expand: false,
-          builder: (context, scrollController) {
-            return DropdownModal<T>(
-              controller: _controller,
-              title: widget.modalTitle,
-              searchHint: widget.searchHint,
-              itemBuilder: widget.itemBuilder,
-              emptyBuilder: widget.emptyBuilder,
-              loadingBuilder: widget.loadingBuilder,
-            );
-          },
+        final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+        final isKeyboardVisible = keyboardHeight > 0;
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          height: isKeyboardVisible
+              ? MediaQuery.of(context).size.height *
+                  0.95 // Almost full screen when keyboard is open
+              : MediaQuery.of(context).size.height * 0.6, // 60% when closed
+          padding: EdgeInsets.only(bottom: keyboardHeight),
+          child: DropdownModal<T>(
+            controller: _controller,
+            title: widget.modalTitle,
+            searchHint: widget.searchHint,
+            itemBuilder: widget.itemBuilder,
+            emptyBuilder: widget.emptyBuilder,
+            loadingBuilder: widget.loadingBuilder,
+          ),
         );
       },
     );
